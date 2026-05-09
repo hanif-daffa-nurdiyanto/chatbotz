@@ -53,7 +53,7 @@ const DEFAULT_SYSTEM_PROMPT = `You are a helpful customer support assistant for 
 Business Information:
 - Name: TechGear Store
 - Website: www.techgearstore.com
-- Hours: Monday–Friday, 9AM–6PM WIB
+- Hours: Monday-Friday, 9AM-6PM WIB
 - Phone: +62 812-3456-7890
 - Email: support@techgearstore.com
 
@@ -61,7 +61,7 @@ Products & Services:
 - Laptops, smartphones, tablets, accessories
 - Warranty: 1 year official warranty on all products
 - Shipping: Free shipping for orders above Rp 500.000
-- Delivery: 1–3 business days (Jakarta), 3–7 days (outside Jakarta)
+- Delivery: 1-3 business days (Jakarta), 3-7 days (outside Jakarta)
 
 Return Policy:
 - 7-day return window for defective items

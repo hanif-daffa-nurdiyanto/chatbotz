@@ -1,5 +1,10 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { ClerkProvider, useAuth } from '@clerk/clerk-react'
+import { ConvexReactClient } from 'convex/react'
+import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import appCss from '../styles.css?url'
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string || "https://dummy-url.convex.cloud")
 
 export const Route = createRootRoute({
   head: () => ({
@@ -18,8 +23,20 @@ export const Route = createRootRoute({
       { rel: 'icon', href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" },
     ],
   }),
-  shellComponent: RootDocument,
+  component: RootComponent,
 })
+
+function RootComponent() {
+  return (
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string || "pk_test_dummy"}>
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <RootDocument>
+          <Outlet />
+        </RootDocument>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

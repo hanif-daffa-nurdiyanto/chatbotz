@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 const PLANS = [
   {
@@ -62,6 +63,7 @@ const PLANS = [
 
 export function Pricing() {
   const ref = useRef<HTMLElement>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -71,6 +73,10 @@ export function Pricing() {
     ref.current?.querySelectorAll('.fade-in').forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [])
+
+  const startHandler = () => {
+    navigate({ to: '/login' })
+  }
 
   return (
     <section id="pricing" ref={ref} style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden' }}>
@@ -128,6 +134,7 @@ export function Pricing() {
                 className={plan.popular ? 'btn-primary' : 'btn-outline'}
                 style={{ width: '100%', padding: '13px', fontSize: '15px', borderColor: plan.color, color: plan.popular ? 'white' : plan.color }}
                 id={`pricing-cta-${plan.name.toLowerCase()}`}
+                onClick={startHandler}
               >
                 {plan.cta}
               </button>

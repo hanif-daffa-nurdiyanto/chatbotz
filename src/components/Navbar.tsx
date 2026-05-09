@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { useUser } from '@clerk/clerk-react'
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -10,6 +12,8 @@ const NAV_LINKS = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const navigate = useNavigate()
+  const { isSignedIn } = useUser()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -64,10 +68,17 @@ export function Navbar() {
               onClick={() => scrollTo('#demo')}>
               Try Demo
             </button>
-            <button className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}
-              onClick={() => scrollTo('#pricing')}>
-              Get Started
-            </button>
+            {isSignedIn ? (
+              <button className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}
+                onClick={() => navigate({ to: '/admin/dashboard' })}>
+                Dashboard
+              </button>
+            ) : (
+              <button className="btn-primary" style={{ padding: '8px 20px', fontSize: '14px' }}
+                onClick={() => navigate({ to: '/login' })}>
+                Get Started
+              </button>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -93,10 +104,17 @@ export function Navbar() {
                 {link.label}
               </button>
             ))}
-            <button className="btn-primary" style={{ width: '100%', padding: '12px', marginTop: '8px', fontSize: '14px' }}
-              onClick={() => scrollTo('#pricing')}>
-              Get Started Free
-            </button>
+            {isSignedIn ? (
+              <button className="btn-primary" style={{ width: '100%', padding: '12px', marginTop: '8px', fontSize: '14px' }}
+                onClick={() => navigate({ to: '/admin/dashboard' })}>
+                Dashboard
+              </button>
+            ) : (
+              <button className="btn-primary" style={{ width: '100%', padding: '12px', marginTop: '8px', fontSize: '14px' }}
+                onClick={() => navigate({ to: '/login' })}>
+                Get Started Free
+              </button>
+            )}
           </div>
         )}
       </div>
