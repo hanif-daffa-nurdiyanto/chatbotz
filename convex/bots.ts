@@ -2,10 +2,13 @@ import { action, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
-type Provider = "openai" | "groq";
+type Provider = "openai" | "groq" | "openrouter" | "anthropic" | "gemini";
 
 function getApiEndpoint(provider: Provider): string {
   if (provider === "groq") return "https://api.groq.com/openai/v1/chat/completions";
+  if (provider === "openrouter") return "https://openrouter.ai/api/v1/chat/completions";
+  if (provider === "anthropic") return "https://api.anthropic.com/v1/messages";
+  // Gemini uses a model-specific URL
   return "https://api.openai.com/v1/chat/completions";
 }
 
@@ -17,7 +20,15 @@ export const createBot = mutation({
     config: v.object({
       model: v.string(),
       temperature: v.number(),
-      provider: v.optional(v.union(v.literal("openai"), v.literal("groq"))),
+      provider: v.optional(
+        v.union(
+          v.literal("openai"),
+          v.literal("groq"),
+          v.literal("openrouter"),
+          v.literal("anthropic"),
+          v.literal("gemini")
+        )
+      ),
       primaryColor: v.optional(v.string()),
       welcomeMessage: v.optional(v.string()),
     }),
@@ -107,7 +118,7 @@ export const getBotPublic = query({
       name: bot.name,
       enabled,
       config: {
-        provider: bot.config.provider ?? "openai",
+        provider: (bot.config.provider ?? "openai") as Provider,
         model: bot.config.model,
         primaryColor: bot.config.primaryColor ?? "#6c63ff",
         welcomeMessage: bot.config.welcomeMessage ?? "Hi! 👋 I'm your AI assistant. How can I help you today?",
@@ -146,30 +157,98 @@ export const chatWithBotPublic = action({
 
     const envOpenAI = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "";
     const envGroq = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || "";
-    const apiKey = (bot.apiKey || (provider === "groq" ? envGroq : envOpenAI) || "").trim();
+    const envOpenRouter = process.env.OPENROUTER_API_KEY || "";
+    const envAnthropic = process.env.ANTHROPIC_API_KEY || "";
+    const envGemini = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+
+    const apiKey = (
+      bot.apiKey ||
+      (provider === "groq"
+        ? envGroq
+        : provider === "openrouter"
+          ? envOpenRouter
+          : provider === "anthropic"
+            ? envAnthropic
+            : provider === "gemini"
+              ? envGemini
+              : envOpenAI) ||
+      ""
+    ).trim();
 
     if (!apiKey) {
       throw new Error(
-        `Missing API key for ${provider}. Set a per-bot key in the Admin UI or configure ${provider === "groq" ? "GROQ_API_KEY" : "OPENAI_API_KEY"} in Convex env.`
+        `Missing API key for ${provider}. Set a per-bot key in the Admin UI or configure the provider env key in Convex (OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY).`
       );
     }
 
     const history = args.messages.slice(-12);
-    const body = {
-      model,
-      messages: [{ role: "system", content: bot.systemPrompt }, ...history],
-      max_tokens: 400,
-      temperature: 0.7,
-    };
+    let res: Response;
 
-    const res = await fetch(getApiEndpoint(provider), {
-      method: "POST",
-      headers: {
+    if (provider === "anthropic") {
+      const anthropicMessages = history.map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: [{ type: "text", text: m.content }],
+      }));
+
+      res = await fetch(getApiEndpoint(provider), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 400,
+          system: bot.systemPrompt,
+          messages: anthropicMessages,
+        }),
+      });
+    } else if (provider === "gemini") {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+        model
+      )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+      const contents = history.map((m) => ({
+        role: m.role === "user" ? "user" : "model",
+        parts: [{ text: m.content }],
+      }));
+
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: bot.systemPrompt }] },
+          contents,
+          generationConfig: { maxOutputTokens: 400 },
+        }),
+      });
+    } else {
+      // OpenAI-compatible: openai, groq, openrouter
+      const body = {
+        model,
+        messages: [{ role: "system", content: bot.systemPrompt }, ...history],
+        max_tokens: 400,
+        temperature: 0.7,
+      };
+
+      const headers: Record<string, string> = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+      };
+
+      if (provider === "openrouter") {
+        // Optional metadata for OpenRouter; safe to omit if unset
+        if (process.env.OPENROUTER_SITE_URL) headers["HTTP-Referer"] = process.env.OPENROUTER_SITE_URL;
+        if (process.env.OPENROUTER_APP_NAME) headers["X-Title"] = process.env.OPENROUTER_APP_NAME;
+      }
+
+      res = await fetch(getApiEndpoint(provider), {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+    }
 
     if (!res.ok) {
       let err: any = {};
@@ -178,11 +257,30 @@ export const chatWithBotPublic = action({
       } catch {
         // ignore
       }
-      const msg = err?.error?.message || `API error ${res.status}`;
+      const msg =
+        err?.error?.message ||
+        err?.message ||
+        err?.error ||
+        (typeof err === "string" ? err : "") ||
+        `API error ${res.status}`;
       throw new Error(msg);
     }
 
     const data: any = await res.json();
+
+    if (provider === "anthropic") {
+      const parts = Array.isArray(data?.content) ? data.content : [];
+      const text = parts.find((p: any) => p?.type === "text")?.text;
+      return { content: text || "Sorry, I could not generate a response." };
+    }
+
+    if (provider === "gemini") {
+      const text =
+        data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join("") ||
+        data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      return { content: text || "Sorry, I could not generate a response." };
+    }
+
     const content = data?.choices?.[0]?.message?.content || "Sorry, I could not generate a response.";
     return { content };
   },
@@ -199,7 +297,15 @@ export const updateBot = mutation({
       v.object({
         model: v.string(),
         temperature: v.number(),
-        provider: v.optional(v.union(v.literal("openai"), v.literal("groq"))),
+        provider: v.optional(
+          v.union(
+            v.literal("openai"),
+            v.literal("groq"),
+            v.literal("openrouter"),
+            v.literal("anthropic"),
+            v.literal("gemini")
+          )
+        ),
         primaryColor: v.optional(v.string()),
         welcomeMessage: v.optional(v.string()),
       })

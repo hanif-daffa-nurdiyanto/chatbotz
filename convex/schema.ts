@@ -20,7 +20,15 @@ export default defineSchema({
     config: v.object({
       model: v.string(),
       temperature: v.number(),
-      provider: v.optional(v.union(v.literal("openai"), v.literal("groq"))),
+      provider: v.optional(
+        v.union(
+          v.literal("openai"),
+          v.literal("groq"),
+          v.literal("openrouter"),
+          v.literal("anthropic"),
+          v.literal("gemini")
+        )
+      ),
       primaryColor: v.optional(v.string()),
       welcomeMessage: v.optional(v.string()),
     }),

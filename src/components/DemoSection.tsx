@@ -13,7 +13,7 @@ const HAS_SHARED_KEY = SHARED_GROQ_KEY.length > 0
 
 type KeyMode = 'shared' | 'own'
 
-type Provider = 'openai' | 'groq'
+type Provider = 'openai' | 'groq' | 'openrouter' | 'anthropic' | 'gemini'
 
 const PROVIDERS: Record<Provider, { label: string; color: string; keyPrefix: string; keyPlaceholder: string; docsUrl: string; models: { id: string; label: string }[] }> = {
   openai: {
@@ -41,10 +41,46 @@ const PROVIDERS: Record<Provider, { label: string; color: string; keyPrefix: str
       { id: 'gemma2-9b-it', label: 'Gemma 2 9B' },
     ],
   },
+  openrouter: {
+    label: 'OpenRouter',
+    color: '#a29bfe',
+    keyPrefix: 'sk-or-',
+    keyPlaceholder: 'sk-or-...',
+    docsUrl: 'https://openrouter.ai/keys',
+    models: [
+      { id: 'openai/gpt-4o-mini', label: 'OpenAI GPT-4o Mini (via OpenRouter)' },
+      { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OpenRouter)' },
+      { id: 'google/gemini-1.5-flash', label: 'Gemini 1.5 Flash (via OpenRouter)' },
+    ],
+  },
+  anthropic: {
+    label: 'Anthropic',
+    color: '#d97706',
+    keyPrefix: 'sk-ant-',
+    keyPlaceholder: 'sk-ant-...',
+    docsUrl: 'https://console.anthropic.com/settings/keys',
+    models: [
+      { id: 'claude-3-5-sonnet-latest', label: 'Claude 3.5 Sonnet (latest)' },
+      { id: 'claude-3-5-haiku-latest', label: 'Claude 3.5 Haiku (latest)' },
+    ],
+  },
+  gemini: {
+    label: 'Google Gemini',
+    color: '#00d4ff',
+    keyPrefix: '',
+    keyPlaceholder: 'AIza... (Google AI Studio key)',
+    docsUrl: 'https://aistudio.google.com/app/apikey',
+    models: [
+      { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+      { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    ],
+  },
 }
 
 function getApiEndpoint(provider: Provider): string {
   if (provider === 'groq') return 'https://api.groq.com/openai/v1/chat/completions'
+  if (provider === 'openrouter') return 'https://openrouter.ai/api/v1/chat/completions'
+  if (provider === 'anthropic') return 'https://api.anthropic.com/v1/messages'
   return 'https://api.openai.com/v1/chat/completions'
 }
 
@@ -187,19 +223,59 @@ export function DemoSection() {
         content: m.text,
       }))
 
-      const res = await fetch(getApiEndpoint(activeProvider), {
-        method: 'POST',
-        headers: {
+      let res: Response
+
+      if (activeProvider === 'anthropic') {
+        const anthropicMessages = history.map(m => ({
+          role: m.role,
+          content: [{ type: 'text', text: m.content }],
+        }))
+        res = await fetch(getApiEndpoint(activeProvider), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': activeKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: activeModel,
+            system: systemPrompt,
+            max_tokens: 400,
+            messages: anthropicMessages,
+          }),
+        })
+      } else if (activeProvider === 'gemini') {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(activeModel)}:generateContent?key=${encodeURIComponent(activeKey)}`
+        const contents = history.map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.content }],
+        }))
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents,
+            generationConfig: { maxOutputTokens: 400 },
+          }),
+        })
+      } else {
+        // OpenAI-compatible: openai, groq, openrouter
+        const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${activeKey}`,
-        },
-        body: JSON.stringify({
-          model: activeModel,
-          messages: [{ role: 'system', content: systemPrompt + "Don't answer if out of context system prompt and if user input is not related to system prompt and if you not sure answer with 'I don't know'" }, ...history],
-          max_tokens: 400,
-          temperature: 0.7,
-        }),
-      })
+        }
+        res = await fetch(getApiEndpoint(activeProvider), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: activeModel,
+            messages: [{ role: 'system', content: systemPrompt + "Don't answer if out of context system prompt and if user input is not related to system prompt and if you not sure answer with 'I don't know'" }, ...history],
+            max_tokens: 400,
+            temperature: 0.7,
+          }),
+        })
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -207,7 +283,12 @@ export function DemoSection() {
       }
 
       const data = await res.json()
-      const botText = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.'
+      const botText =
+        activeProvider === 'anthropic'
+          ? (Array.isArray(data?.content) ? data.content.find((p: any) => p?.type === 'text')?.text : undefined) || 'Sorry, I could not generate a response.'
+          : activeProvider === 'gemini'
+            ? (data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join('') || data?.candidates?.[0]?.content?.parts?.[0]?.text) || 'Sorry, I could not generate a response.'
+            : data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.'
       const botMsg: Message = { role: 'bot', text: botText, ts: Date.now() }
       const final = [...newMessages, botMsg]
       setMessages(final)
@@ -385,7 +466,16 @@ export function DemoSection() {
                                 background: provider === p ? `${PROVIDERS[p].color}22` : 'rgba(255,255,255,0.03)',
                                 color: provider === p ? PROVIDERS[p].color : '#8892b0',
                               }}>
-                              {p === 'openai' ? '🟢' : '⚡'} {PROVIDERS[p].label}
+                              {p === 'openai'
+                                ? '🟢'
+                                : p === 'groq'
+                                  ? '⚡'
+                                  : p === 'openrouter'
+                                    ? '🧭'
+                                    : p === 'anthropic'
+                                      ? '🧠'
+                                      : '✨'}{' '}
+                              {PROVIDERS[p].label}
                             </button>
                           ))}
                         </div>

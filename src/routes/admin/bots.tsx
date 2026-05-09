@@ -4,7 +4,7 @@ import { api } from '../../../convex/_generated/api'
 import { useState } from 'react'
 import { Bot, Plus, Trash2, Edit2, X, Settings2, Key, Eye, EyeOff, Paintbrush, Code, Copy, Check } from 'lucide-react'
 
-type Provider = 'openai' | 'groq'
+type Provider = 'openai' | 'groq' | 'openrouter' | 'anthropic' | 'gemini'
 
 const MODEL_OPTIONS = [
   {
@@ -27,6 +27,19 @@ const MODEL_OPTIONS = [
   },
   { provider: 'groq' as const, id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (32k ctx)' },
   { provider: 'groq' as const, id: 'gemma2-9b-it', label: 'Gemma 2 9B' },
+
+  // OpenRouter (OpenAI-compatible; supports many models via a single API key)
+  { provider: 'openrouter' as const, id: 'openai/gpt-4o-mini', label: 'OpenAI GPT-4o Mini (via OpenRouter)' },
+  { provider: 'openrouter' as const, id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OpenRouter)' },
+  { provider: 'openrouter' as const, id: 'google/gemini-1.5-flash', label: 'Gemini 1.5 Flash (via OpenRouter)' },
+
+  // Anthropic (direct)
+  { provider: 'anthropic' as const, id: 'claude-3-5-sonnet-latest', label: 'Claude 3.5 Sonnet (latest)' },
+  { provider: 'anthropic' as const, id: 'claude-3-5-haiku-latest', label: 'Claude 3.5 Haiku (latest)' },
+
+  // Google Gemini (direct)
+  { provider: 'gemini' as const, id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+  { provider: 'gemini' as const, id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
 ] as const satisfies { provider: Provider; id: string; label: string }[]
 
 const PROVIDERS: Record<
@@ -52,6 +65,27 @@ const PROVIDERS: Record<
     keyPlaceholder: 'gsk_...',
     docsUrl: 'https://console.groq.com/keys',
     defaultModel: 'llama-3.1-8b-instant',
+  },
+  openrouter: {
+    label: 'OpenRouter',
+    keyPrefix: 'sk-or-',
+    keyPlaceholder: 'sk-or-...',
+    docsUrl: 'https://openrouter.ai/keys',
+    defaultModel: 'openai/gpt-4o-mini',
+  },
+  anthropic: {
+    label: 'Anthropic',
+    keyPrefix: 'sk-ant-',
+    keyPlaceholder: 'sk-ant-...',
+    docsUrl: 'https://console.anthropic.com/settings/keys',
+    defaultModel: 'claude-3-5-sonnet-latest',
+  },
+  gemini: {
+    label: 'Google Gemini',
+    keyPrefix: '',
+    keyPlaceholder: 'AIza... (Google AI Studio key)',
+    docsUrl: 'https://aistudio.google.com/app/apikey',
+    defaultModel: 'gemini-1.5-flash',
   },
 }
 
@@ -444,6 +478,9 @@ function BotsPage() {
                         >
                           <option value="openai">OpenAI</option>
                           <option value="groq">Groq</option>
+                          <option value="openrouter">OpenRouter</option>
+                          <option value="anthropic">Anthropic</option>
+                          <option value="gemini">Google Gemini</option>
                         </select>
                       </div>
                       <div>

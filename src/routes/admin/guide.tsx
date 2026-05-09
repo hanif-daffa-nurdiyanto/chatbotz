@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Code, KeyRound, Power, Shield, PlugZap } from 'lucide-react'
+import { Code, KeyRound, Power, Shield, PlugZap, Globe } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/guide')({
   component: AdminGuidePage,
@@ -53,11 +53,14 @@ function AdminGuidePage() {
         </h2>
         <div className="space-y-3 text-sm text-gray-300 leading-relaxed">
           <p>
-            In <span className="font-semibold text-white">My Bots → Edit/Create → API Key</span>, pick a provider (OpenAI or Groq),
+            In <span className="font-semibold text-white">My Bots → Edit/Create → API Key</span>, pick a provider (OpenAI, Groq, OpenRouter, Anthropic, or Gemini),
             choose a model, and optionally paste a per-bot API key.
           </p>
           <p>
             If you don’t set a per-bot key, the embed chat uses your server environment keys (recommended).
+          </p>
+          <p className="text-xs text-gray-500">
+            Tip: OpenRouter is a great “one key for many models” option. Anthropic/Gemini direct are best if you want provider-native billing and features.
           </p>
         </div>
 
@@ -76,7 +79,32 @@ function AdminGuidePage() {
               <li>Set server env: <span className="font-mono text-gray-200">GROQ_API_KEY</span></li>
             </ul>
           </div>
+          <div className="rounded-xl border border-white/10 bg-[#080d1f] p-4">
+            <div className="text-sm font-semibold text-white mb-2">OpenRouter</div>
+            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+              <li>Key prefix: <span className="font-mono text-gray-200">sk-or-</span></li>
+              <li>Set server env: <span className="font-mono text-gray-200">OPENROUTER_API_KEY</span></li>
+              <li>Models look like: <span className="font-mono text-gray-200">provider/model</span> (e.g. <span className="font-mono text-gray-200">openai/gpt-4o-mini</span>)</li>
+            </ul>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#080d1f] p-4">
+            <div className="text-sm font-semibold text-white mb-2">Anthropic</div>
+            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+              <li>Key prefix: <span className="font-mono text-gray-200">sk-ant-</span></li>
+              <li>Set server env: <span className="font-mono text-gray-200">ANTHROPIC_API_KEY</span></li>
+              <li>Models look like: <span className="font-mono text-gray-200">claude-...</span></li>
+            </ul>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#080d1f] p-4 lg:col-span-2">
+            <div className="text-sm font-semibold text-white mb-2">Google Gemini</div>
+            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+              <li>Key prefix: (none). Usually starts with <span className="font-mono text-gray-200">AIza</span></li>
+              <li>Set server env: <span className="font-mono text-gray-200">GEMINI_API_KEY</span> (or <span className="font-mono text-gray-200">GOOGLE_API_KEY</span>)</li>
+              <li>Models look like: <span className="font-mono text-gray-200">gemini-...</span> (e.g. <span className="font-mono text-gray-200">gemini-1.5-flash</span>)</li>
+            </ul>
+          </div>
         </div>
+
       </section>
 
       <section className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6">
@@ -104,4 +132,3 @@ function AdminGuidePage() {
     </div>
   )
 }
-
