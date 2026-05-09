@@ -16,6 +16,7 @@ export default defineSchema({
     name: v.string(),
     systemPrompt: v.string(),
     apiKey: v.optional(v.string()),
+    enabled: v.optional(v.boolean()),
     config: v.object({
       model: v.string(),
       temperature: v.number(),

@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
 import { UserButton, useUser } from '@clerk/clerk-react'
-import { LayoutDashboard, Bot, Loader2, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Bot, Loader2, Menu, X, BookOpenText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/admin')({
@@ -111,6 +111,14 @@ function AdminLayout() {
             >
               <Bot className="w-5 h-5" />
               <span className="font-medium">My Bots</span>
+            </Link>
+            <Link
+              to="/admin/guide"
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 [&.active]:bg-gradient-to-r [&.active]:from-white/10 [&.active]:to-transparent [&.active]:text-white [&.active]:border-l-2 [&.active]:border-white/30"
+            >
+              <BookOpenText className="w-5 h-5" />
+              <span className="font-medium">Guide</span>
             </Link>
           </nav>
 

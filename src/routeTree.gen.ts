@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EmbedBotIdRouteImport } from './routes/embed/$botId'
+import { Route as AdminGuideRouteImport } from './routes/admin/guide'
 import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminBotsRouteImport } from './routes/admin/bots'
 
@@ -30,6 +32,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmbedBotIdRoute = EmbedBotIdRouteImport.update({
+  id: '/embed/$botId',
+  path: '/embed/$botId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGuideRoute = AdminGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -47,6 +59,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/bots': typeof AdminBotsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/guide': typeof AdminGuideRoute
+  '/embed/$botId': typeof EmbedBotIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin/bots': typeof AdminBotsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/guide': typeof AdminGuideRoute
+  '/embed/$botId': typeof EmbedBotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +78,28 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/bots': typeof AdminBotsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/guide': typeof AdminGuideRoute
+  '/embed/$botId': typeof EmbedBotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/login' | '/admin/bots' | '/admin/dashboard'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/admin/bots'
+    | '/admin/dashboard'
+    | '/admin/guide'
+    | '/embed/$botId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/login' | '/admin/bots' | '/admin/dashboard'
+  to:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/admin/bots'
+    | '/admin/dashboard'
+    | '/admin/guide'
+    | '/embed/$botId'
   id:
     | '__root__'
     | '/'
@@ -75,12 +107,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/bots'
     | '/admin/dashboard'
+    | '/admin/guide'
+    | '/embed/$botId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  EmbedBotIdRoute: typeof EmbedBotIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -106,6 +141,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/embed/$botId': {
+      id: '/embed/$botId'
+      path: '/embed/$botId'
+      fullPath: '/embed/$botId'
+      preLoaderRoute: typeof EmbedBotIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/guide': {
+      id: '/admin/guide'
+      path: '/guide'
+      fullPath: '/admin/guide'
+      preLoaderRoute: typeof AdminGuideRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/dashboard': {
       id: '/admin/dashboard'
       path: '/dashboard'
@@ -126,11 +175,13 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminBotsRoute: typeof AdminBotsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminGuideRoute: typeof AdminGuideRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBotsRoute: AdminBotsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminGuideRoute: AdminGuideRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -139,6 +190,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  EmbedBotIdRoute: EmbedBotIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

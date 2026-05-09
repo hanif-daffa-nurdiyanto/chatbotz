@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { useState } from 'react'
-import { Bot, Plus, Trash2, Edit2, X, Settings2, Key, Eye, EyeOff, Paintbrush } from 'lucide-react'
+import { Bot, Plus, Trash2, Edit2, X, Settings2, Key, Eye, EyeOff, Paintbrush, Code, Copy, Check } from 'lucide-react'
 
 type Provider = 'openai' | 'groq'
 
@@ -87,6 +87,46 @@ function BotsPage() {
   
   const [error, setError] = useState('')
   const previewPrimary = formData.primaryColor || '#6c63ff'
+  const [copiedBotId, setCopiedBotId] = useState<string | null>(null)
+
+  const getEmbedSnippet = (id: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    return `<script async src="${origin}/widget.js" data-chatbotz-bot="${id}"></script>`
+  }
+
+  const copyEmbedSnippet = async (id: string) => {
+    const text = getEmbedSnippet(id)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedBotId(id)
+      window.setTimeout(() => setCopiedBotId((prev) => (prev === id ? null : prev)), 1500)
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      try {
+        document.execCommand('copy')
+        setCopiedBotId(id)
+        window.setTimeout(() => setCopiedBotId((prev) => (prev === id ? null : prev)), 1500)
+      } finally {
+        document.body.removeChild(ta)
+      }
+    }
+  }
+
+  const toggleBotEnabled = async (bot: any) => {
+    const current = bot.enabled ?? true
+    try {
+      await updateBot({ id: bot._id, enabled: !current })
+    } catch (err: any) {
+      alert(err?.message || 'Failed to update bot status')
+    }
+  }
 
   const handleOpenCreate = () => {
     setEditingBot(null)
@@ -132,7 +172,7 @@ function BotsPage() {
         await updateBot({
           id: editingBot._id,
           name: formData.name,
-          systemPrompt: formData.systemPrompt,
+          systemPrompt: formData.systemPrompt + "Don't answer if out of context system prompt and if user input is not related to system prompt and if you not sure answer with 'I don't know",
           apiKey: formData.apiKey || undefined,
           config: {
             provider: formData.provider || undefined,
@@ -217,6 +257,29 @@ function BotsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleBotEnabled(bot)}
+                      className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                      aria-label={(bot.enabled ?? true) ? 'Turn bot off' : 'Turn bot on'}
+                      title={(bot.enabled ?? true) ? 'Turn off (Offline)' : 'Turn on (Online)'}
+                    >
+                      <span
+                        className={[
+                          'relative inline-flex h-5 w-9 items-center rounded-full border transition-colors',
+                          (bot.enabled ?? true)
+                            ? 'bg-green-500/20 border-green-500/30'
+                            : 'bg-white/5 border-white/10',
+                        ].join(' ')}
+                      >
+                        <span
+                          className={[
+                            'inline-block h-4 w-4 transform rounded-full transition-transform',
+                            (bot.enabled ?? true) ? 'translate-x-4 bg-green-400' : 'translate-x-1 bg-gray-400',
+                          ].join(' ')}
+                        />
+                      </span>
+                    </button>
                     <button onClick={() => handleOpenEdit(bot)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -232,16 +295,22 @@ function BotsPage() {
               </div>
 
               <div className="flex items-center gap-3 text-xs font-medium text-gray-500 mt-auto">
-                <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
-                  <Settings2 className="w-3.5 h-3.5" />
-                  {bot.config.model}
-                </div>
+             
                 {bot.apiKey && (
                   <div className="flex items-center gap-1.5 bg-[#00d4ff]/10 text-[#00d4ff] px-2.5 py-1.5 rounded-lg border border-[#00d4ff]/20">
                     <Key className="w-3.5 h-3.5" />
                     Custom Key
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => copyEmbedSnippet(String(bot._id))}
+                  className="cursor-pointer ml-auto inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-200 px-2.5 py-1.5 rounded-lg border border-white/10 transition-colors"
+                  title="Copy embed script"
+                >
+                  {copiedBotId === String(bot._id) ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedBotId === String(bot._id) ? 'Copied' : 'Copy Script'}
+                </button>
               </div>
             </div>
           ))}
@@ -465,12 +534,10 @@ function BotsPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="text-sm font-bold truncate">{formData.name || 'Your Bot'}</div>
-                            <div className="text-[11px] text-gray-300/80 truncate">
-                              {MODEL_OPTIONS.find((m) => m.id === formData.model)?.label || formData.model}
-                            </div>
+                            <div className="text-[11px] text-gray-300/80 truncate">Online</div>
                           </div>
                         </div>
-                        <span className="text-[11px] text-gray-300/70">Online</span>
+                        {/* <span className="text-[11px] text-gray-300/70"></span> */}
                       </div>
 
                       <div className="px-4 py-4 space-y-3">
@@ -506,7 +573,7 @@ function BotsPage() {
                     </div>
 
                     <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-                      Preview uses your current <span className="font-semibold">Config</span> values (name, color, welcome message, model).
+                      Preview uses your current <span className="font-semibold">Config</span> values (name, color, welcome message).
                     </p>
                   </div>
                 </div>
