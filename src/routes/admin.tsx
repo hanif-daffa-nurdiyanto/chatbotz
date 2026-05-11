@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
-import { UserButton, useUser } from '@clerk/clerk-react'
-import { LayoutDashboard, Bot, Loader2, Menu, X, BookOpenText } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { UserButton, useClerk, useUser } from '@clerk/clerk-react'
+import { LayoutDashboard, Bot, Loader2, Menu, X, BookOpenText, LogOut } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export const Route = createFileRoute('/admin')({
   component: AdminLayout,
@@ -9,6 +9,7 @@ export const Route = createFileRoute('/admin')({
 
 function AdminLayout() {
   const { isLoaded, isSignedIn } = useUser()
+  const clerk = useClerk()
   const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -123,13 +124,43 @@ function AdminLayout() {
           </nav>
 
           <div className="hidden md:block p-6 border-t border-white/10">
-            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-              <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'w-10 h-10 border-2 border-[#6c63ff]' } }} />
+            <div
+              onClick={() => clerk.openUserProfile()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  clerk.openUserProfile()
+                }
+              }}
+              className="w-full flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors text-left cursor-pointer"
+              role="button"
+              tabIndex={0}
+              aria-label="Open profile"
+            >
+              <div onClick={(e) => e.stopPropagation()}>
+                <UserButton
+                  afterSignOutUrl="/"
+                  appearance={{ elements: { avatarBox: 'w-10 h-10 border-2 border-[#6c63ff]' } }}
+                />
+              </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Profile</span>
                 <span className="text-xs text-gray-400">Manage account</span>
               </div>
+              
             </div>
+            <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void clerk.signOut({ redirectUrl: '/' })
+                }}
+                className="w-full mt-2 ml-auto inline-flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 active:scale-95 transition"
+                aria-label="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
           </div>
         </aside>
       </div>
