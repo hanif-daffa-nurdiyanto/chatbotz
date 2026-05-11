@@ -517,7 +517,7 @@ export function DemoSection() {
                         </div>
                       ) : (
                         <div style={{ color: '#ffd93d', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'flex-start', lineHeight: 1.5 }}>
-                          <span>⚠️</span> Get a free {PROVIDERS[provider].label} key at{' '}
+                          <span>⚠️</span> Get a {PROVIDERS[provider].label} key at{' '}
                           <a href={PROVIDERS[provider].docsUrl} target="_blank" rel="noreferrer" style={{ color: '#6c63ff' }}>{PROVIDERS[provider].docsUrl.replace('https://', '')}</a>
                         </div>
                       )}
@@ -620,7 +620,7 @@ export function DemoSection() {
               <div style={{ color: '#8892b0', fontSize: '11px', marginBottom: '8px', fontFamily: 'inherit' }}>// Embed code for YOUR website</div>
               <div style={{ color: '#a29bfe', fontSize: '12px' }}>
                 <span style={{ color: '#6c63ff' }}>&lt;script</span>{' '}
-                <span style={{ color: '#00d4ff' }}>src</span>=<span style={{ color: '#00ff88' }}>"https://chatbotz.io/widget.js"</span>
+                <span style={{ color: '#00d4ff' }}>src</span>=<span style={{ color: '#00ff88' }}>"{window.location.protocol}//{window.location.hostname}/widget.js"</span>
                 <br />
                 {'  '}<span style={{ color: '#00d4ff' }}>data-bot-id</span>=<span style={{ color: '#00ff88' }}>"your-bot-id"</span>
                 <span style={{ color: '#6c63ff' }}>&gt;&lt;/script&gt;</span>

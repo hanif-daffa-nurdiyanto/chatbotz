@@ -46,7 +46,11 @@ export function Hero() {
 
             <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 'clamp(36px, 5vw, 62px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-2px', marginBottom: '24px' }}>
               Smart Chatbot for{' '}
-              <span className="gradient-text typing-cursor">{displayed}</span>
+              <span className="gradient-text typing-cursor" style={{
+                display: 'inline-block',
+                minWidth: '200px',
+                textAlign: 'left'
+              }}>{displayed || '\u00A0'}</span>
             </h1>
 
             <p style={{ color: '#8892b0', fontSize: '18px', lineHeight: 1.7, marginBottom: '40px', maxWidth: '480px' }}>
